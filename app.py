@@ -1,4 +1,3 @@
-# app.py
 import streamlit as st
 import os
 import pandas as pd
@@ -9,6 +8,9 @@ import plotly.graph_objects as go
 # কাস্টম মডিউল ইম্পোর্ট
 import database as db_module
 import ai_summary as ai_gemini
+
+# পৃষ্ঠা কনফিগারেশন (এটি একদম শুরুতে থাকতে হবে স্ট্রিমলিটের নিয়ম অনুযায়ী)
+st.set_page_config(page_title="LoveLens AI", page_icon="❤️", layout="wide")
 
 # ডাটাবেস সেটআপ
 db = db_module.Database()
@@ -26,10 +28,7 @@ emotion_icon = {
     "Support": "🤗", "Loneliness": "😔", "Neutral": "😐", "Missing": "🫂", "Hope": "✨"
 }
 
-# পৃষ্ঠা কনফিগারেশন
-st.set_page_config(page_title="LoveLens AI", page_icon="❤️", layout="wide")
-
-# সিএসএস দিয়ে ইন্টারফেস সুন্দর করা
+# সিএসএস দিয়ে ইন্টারফেস সুন্দর করা
 st.markdown("""
     <style>
     .metric-box {
@@ -47,7 +46,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# মাল্টিপল পেজ নেভিগেশন
+# মাল্টিপল পেজ নেভিগেশন (সবার জন্য উন্মুক্ত)
 page = st.sidebar.radio("Navigation", ["❤️ LoveLens AI Dashboard", "📖 Our Story"])
 
 # -------------------------------------------------------------------------
@@ -159,7 +158,7 @@ if page == "❤️ LoveLens AI Dashboard":
                     st.info(ai_reflection)
 
 # -------------------------------------------------------------------------
-# PAGE 2: OUR STORY (ফটো টাইমলাইন ও জেমিনি স্টোরিসহ)
+# PAGE 2: OUR STORY
 # -------------------------------------------------------------------------
 elif page == "📖 Our Story":
     st.title("📖 Our Story ❤️")
@@ -212,10 +211,14 @@ elif page == "📖 Our Story":
                     st.error("Could not reach Gemini API at the moment, but your timeline is perfectly loaded above! ❤️")
 
 # -------------------------------------------------------------------------
-# SIDEBAR: DATA ENTRY
+# SIDEBAR: DATA ENTRY (🔒 এডমিন লক সিস্টেম)
 # -------------------------------------------------------------------------
 st.sidebar.write("---")
 st.sidebar.header("📝 Quick Entry Box")
+
+# সিক্রেট পাসওয়ার্ড বক্স (ভিজিটররা দেখতে পারবে কিন্তু এডিট করতে পারবে না)
+admin_password = st.sidebar.text_input("🔑 Admin Password to Save", type="password", help="Enter password to unlock saving.")
+
 entry_date = st.sidebar.date_input("Date", date.today(), key="sb_date")
 text_entry = st.sidebar.text_area("What's the memory?", key="sb_text")
 location = st.sidebar.text_input("📍 Location", placeholder="e.g., USM / Dhaka", key="sb_loc")
@@ -225,7 +228,13 @@ tags = st.sidebar.text_input("🏷️ Tags", placeholder="Love, Coffee, Travel",
 uploaded_file = st.sidebar.file_uploader("📸 Photo", type=["jpg", "png", "jpeg"], key="sb_file")
 
 if st.sidebar.button("Save New Memory 💾"):
-    if text_entry.strip():
+    # পাসওয়ার্ড ভেরিফিকেশন লজিক
+    if admin_password != "Saurav@23296":
+        st.sidebar.error("❌ Wrong Admin Password! You cannot edit this database.")
+    elif not text_entry.strip():
+        st.sidebar.warning("⚠️ Please write some memory first!")
+    else:
+        # পাসওয়ার্ড সঠিক হলে ডাটাবেসে সেভ হবে
         saved_image_name = "None"
         if uploaded_file is not None:
             saved_image_name = f"{entry_date.strftime('%Y%m%d')}_{uploaded_file.name}"
@@ -241,5 +250,5 @@ if st.sidebar.button("Save New Memory 💾"):
             sentiment_score=derived_sentiment, emotion=derived_emotion,
             tags=tags, weather=weather
         )
-        st.sidebar.success("Saved!")
+        st.sidebar.success("Saved Successfully! 🎉")
         st.rerun()
